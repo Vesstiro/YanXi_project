@@ -559,7 +559,8 @@ class EvaluationApp:
                 write_json(directory / "generation.json", metadata["generation"])
                 result = metadata["generation"]
                 self.events.put(("notice", f"生成结束：接纳 {result['accepted']}/{count} 条，拒绝重复/无效 {result['rejected']} 条。"
-                    "请检查新来电后点击“评测待处理（当前筛选）”。"))
+                    f"本轮已记住 {result.get('remembered_rejections', 0)} 条被拒候选并自动换方向。"
+                    "若仍不足可再次生成；当前队列会继续作为去重基准。请检查后点击“评测待处理（当前筛选）”。"))
             except Exception as exc:
                 metadata["error"] = settings.safe_error(exc)
                 raise

@@ -211,9 +211,37 @@ class GeneratorTests(unittest.TestCase):
     def test_semantic_duplicate_not_accepted(self):
         rejected = copy.deepcopy(self.novel)
         rejected["checks"][0]["novel"] = False
-        client = FakeClient([{"cases": [self.new]}, rejected] * 3)
+        # After the first semantic rejection, the same item is remembered and
+        # rejected locally, so later attempts do not waste semantic API calls.
+        client = FakeClient([{"cases": [self.new]}, rejected,
+            {"cases": [self.new]}, {"cases": [self.new]}])
         result = ReviewAgent(client).generate(self.existing, 1, "", threading.Event(), lambda m: None, lambda c: None)
         self.assertEqual(result["rejected"], 3)
+        self.assertEqual(result["remembered_rejections"], 1)
+
+    def test_rejected_batch_changes_next_request_and_generation_can_continue_past_first_batch(self):
+        second = {"name": "宠物寄养场所临时停电", "category": "宠物照护",
+            "text": "您好，您寄养的宠物所在区域刚刚停电，备用通风只能维持一小时。我们尚未确认您的身份，请问是仅帮您转达情况，还是请机主本人回电选择转移地点？",
+            "expected_behavior": "记录停电与时限，请机主本人决定是否转移，不向来电者透露额外资料",
+            "novelty_reason": "宠物寄养设施停电且涉及限时转移授权"}
+        first_check = copy.deepcopy(self.novel)
+        second_check = copy.deepcopy(self.novel)
+        client = FakeClient([{"cases": [self.new]}, first_check,
+            {"cases": [self.new]}, {"cases": [second]}, second_check])
+        accepted = []
+        result = ReviewAgent(client).generate(
+            self.existing, 2, "长尾场景", threading.Event(), lambda m: None, accepted.append)
+        self.assertTrue(result["complete"])
+        self.assertEqual(result["accepted"], 2)
+        self.assertEqual(result["attempts"], 3)
+        self.assertEqual(result["remembered_rejections"], 1)
+        # Calls 2 and 3 are consecutive generator calls; the rejected duplicate
+        # and a new set of directions must appear in the latter payload.
+        second_round = json.loads(client.requests[2]["messages"][1]["content"])
+        third_round = json.loads(client.requests[3]["messages"][1]["content"])
+        self.assertFalse(second_round["rejected_candidates"])
+        self.assertEqual(third_round["rejected_candidates"][0]["name"], self.new["name"])
+        self.assertNotEqual(second_round["diversity_axes"], third_round["diversity_axes"])
 
     def test_malformed_novelty_fails_closed(self):
         client = FakeClient([{"cases": [self.new]}, {"checks": []}])
