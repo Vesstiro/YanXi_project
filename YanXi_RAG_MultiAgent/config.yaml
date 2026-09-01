@@ -1,0 +1,116 @@
+# ============================================================
+# 言犀 RAG 多Agent新工程：PythonProject2核心 + YanXi上下文/评测
+# ============================================================
+
+# --- LLM 配置 ---
+llm:
+  # 当前使用的后端: deepseek / zhipu / qwen
+  backend: "qwen"
+  # DeepSeek 配置
+  deepseek:
+    api_key_env: "DEEPSEEK_API_KEY"
+    base_url: "https://api.deepseek.com/v1"
+    model: "deepseek-v4-pro"
+    temperature: 0.3
+    max_tokens: 2048
+    timeout: 30
+  # 智谱 GLM 配置
+  zhipu:
+    api_key_env: "ZHIPU_API_KEY"
+    model: "glm-4-flash"
+    temperature: 0.3
+    max_tokens: 2048
+    timeout: 30
+  # 通义千问配置
+  qwen:
+    api_key_env: "QWEN_API_KEY"
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    model: "qwen-plus"
+    temperature: 0.3
+    max_tokens: 2048
+    timeout: 30
+  # 重试配置
+  retry:
+    max_retries: 3
+    base_delay: 1.0
+  # 降级链路: 按顺序尝试
+  fallback_chain:
+    - qwen
+    - deepseek
+    - zhipu
+
+# --- 语音识别 (STT) ---
+stt:
+  model_size: "large-v3"
+  device: "cpu"
+  compute_type: "int8"
+  language: "zh"
+  sample_rate: 16000
+  vad_threshold: 0.02
+  silence_duration: 2.0
+
+# --- 语音合成 (TTS) ---
+tts:
+  voice: "zh-CN-XiaoxiaoNeural"
+  rate: "+0%"
+  pitch: "+0Hz"
+
+# --- RAG 知识库 ---
+rag:
+  # PythonProject2同款Qwen向量 + Chroma + 2/3/4/5-gram混合检索。
+  knowledge_path: "./assets/knowledge.txt"
+  embedding_model: "text-embedding-v4"
+  embedding_dimensions: 1024
+  embedding_device: "cpu"
+  chroma_persist_dir: "./data/chroma_db"
+  collection_name: "yanxi_pp2_rules"
+  chunk_size: 512
+  chunk_overlap: 50
+  retrieval_top_k: 5
+
+# --- 混合检索配置（BM25 + 向量 双路） ---
+hybrid_retrieval:
+  # 双路权重
+  bm25_weight: 0.4
+  vector_weight: 0.6
+  # RRF 融合参数
+  rrf_k: 60
+  # 重排序
+  reranker_semantic_weight: 0.5
+  reranker_keyword_weight: 0.3
+
+# --- Agent 调度配置 ---
+orchestrator:
+  max_conversation_rounds: 10
+  scam_confidence_threshold: 0.7
+
+# --- 习惯学习配置 ---
+habit:
+  persist_path: "./data/habits/habit_store.json"
+  auto_detect: false
+
+# --- 通知卡片配置 ---
+notification:
+  persist_path: "./data/notifications"
+
+# --- 通话记录配置 ---
+recorder:
+  persist_dir: "./data/recordings"
+
+call_log:
+  persist_dir: "./data/call_logs"
+
+# --- 来电者画像配置 ---
+caller_profile:
+  persist_path: "./data/profiles/caller_profiles.json"
+
+# --- 对话记忆配置 ---
+conversation_memory:
+  max_short_term: 50
+  context_window: 10
+
+# --- 日志配置 ---
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "./data/yanxi.log"
