@@ -18,3 +18,5 @@ models/
 *.part
 *.sqlite3
 *.db
+# Visual Studio local files
+.vs/
