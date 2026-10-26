@@ -209,6 +209,8 @@ class DesktopApp:
         self.provider_label.pack(fill="x", padx=15)
         self.button(sidebar, "API 与语音设置", self.open_settings, fill="x", padx=15, pady=(12, 8))
         self.context_button = self.button(sidebar, "机主与号码管理", self.open_context, fill="x", padx=15, pady=4)
+        self.button(sidebar, "核验资料与题数", self.open_verification_profile, fill="x", padx=15, pady=4)
+        self.button(sidebar, "模拟响铃前核验", self.open_pre_ring, fill="x", padx=15, pady=4)
         self.owner_label = tk.Label(sidebar, text="", bg="#142A46", fg="#D7E5F7", justify="left",
             wraplength=155, font=("Microsoft YaHei UI", 9))
         self.owner_label.pack(fill="x", padx=20, pady=(8, 8))
@@ -367,6 +369,21 @@ class DesktopApp:
             ContextDialog(self)
         except (OSError, ValueError, TypeError) as error:
             messagebox.showerror("机主设置读取失败", safe_error(error), parent=self.root)
+
+    def open_verification_profile(self):
+        if not self.idle():
+            return
+        from src.desktop.verification_dialog import VerificationOwnerDialog
+        try:
+            VerificationOwnerDialog(self)
+        except (ValueError, OSError):
+            messagebox.showerror("核验资料读取失败", "无法解密或读取核验资料。请使用原 Windows 账户并检查本机资料文件；原文件未被覆盖。", parent=self.root)
+
+    def open_pre_ring(self):
+        if not self.idle():
+            return
+        from src.desktop.verification_dialog import PreRingDialog
+        PreRingDialog(self)
 
     def update_owner_summary(self):
         from src.desktop.context_dialog import owner_summary
